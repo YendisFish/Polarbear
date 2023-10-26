@@ -140,13 +140,22 @@ public class PolarbearDB
         }
     }
 
-    public void RemoveById()
+    public void RemoveById<T>(T obj) where T: Enterable
     {
-        
+        string key = typeof(T).Name;
+
+        if(!dbMap.ContainsKey(key) || !dbMap[key].ContainsKey(obj.Id))
+        {
+            return;
+        }
+
+        dbMap[key].Remove(obj.Id);
     }
 
     public void Remove<T>(T obj, params string[] toInclude) where T: Enterable
     {
+        List<T> toRemove = new();
+        
         IEnumerable<PropertyInfo> props = typeof(T).GetProperties().Where(x => toInclude.Contains(x.Name));
         IEnumerable<FieldInfo> fields = typeof(T).GetFields().Where(x => toInclude.Contains(x.Name));
         
@@ -157,7 +166,7 @@ public class PolarbearDB
             
             if(!reverseLookup.ContainsKey(stringRep) || !reverseLookup[stringRep].ContainsKey(typeof(T).Name))
             {
-                return;
+                break;
             }
 
             CompareLogic logic = new();
@@ -168,6 +177,7 @@ public class PolarbearDB
                 ComparisonResult result = logic.Compare(obj, reverseLookup[stringRep][typeof(T).Name][i]);
                 if(result.AreEqual)
                 {
+                    toRemove.Add((T)reverseLookup[stringRep][typeof(T).Name][i]);
                     reverseLookup[stringRep][typeof(T).Name].RemoveAt(i);
                 }
             }
@@ -180,7 +190,7 @@ public class PolarbearDB
             
             if(!reverseLookup.ContainsKey(stringRep) || !reverseLookup[stringRep].ContainsKey(typeof(T).Name))
             {
-                return;
+                break;
             }
 
             CompareLogic logic = new();
@@ -191,8 +201,22 @@ public class PolarbearDB
                 ComparisonResult result = logic.Compare(obj, reverseLookup[stringRep][typeof(T).Name][i]);
                 if(result.AreEqual)
                 {
+                    toRemove.Add((T)reverseLookup[stringRep][typeof(T).Name][i]);
                     reverseLookup[stringRep][typeof(T).Name].RemoveAt(i);
                 }
+            }
+        }
+        
+        if(!dbMap.ContainsKey(typeof(T).Name))
+        {
+            throw new Exception("Data inconsistency!");
+        }
+
+        foreach(T removeable in toRemove)
+        {
+            if(dbMap[typeof(T).Name].ContainsKey(removeable.Id))
+            {
+                RemoveById(removeable);
             }
         }
     }

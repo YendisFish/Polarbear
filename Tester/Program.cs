@@ -18,6 +18,13 @@ db.Remove(tests[0], "Id", "x");
 Test[]? tests2 = db.Query(t1, "Id");
 Console.WriteLine(tests2.Length);
 
+Test? tt = db.QueryById(t);
+if(tt is null)
+{
+    Console.WriteLine("Success");
+}
+Console.WriteLine(tt.Id);
+
 public class Test : Enterable
 {
     public int x = 5;
