@@ -13,6 +13,11 @@ Test[]? tests = db.Query(t1, "Id");
 Console.WriteLine(tests.Length);
 Console.WriteLine(tests[0].Id);
 
+db.Remove(tests[0], "Id", "x");
+
+Test[]? tests2 = db.Query(t1, "Id");
+Console.WriteLine(tests2.Length);
+
 public class Test : Enterable
 {
     public int x = 5;

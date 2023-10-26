@@ -48,17 +48,13 @@ public class PolarbearDB
     {
         List<T> ret = new();
 
-        IEnumerable<PropertyInfo> props = typeof(T).GetProperties().Where(x => toInclude.Contains(x.Name)).ToArray();
-        IEnumerable<FieldInfo> fields = typeof(T).GetFields().Where(x => toInclude.Contains(x.Name)).ToArray();
-        
-        Console.WriteLine(props.Count());
-        Console.WriteLine(fields.Count());
+        IEnumerable<PropertyInfo> props = typeof(T).GetProperties().Where(x => toInclude.Contains(x.Name));
+        IEnumerable<FieldInfo> fields = typeof(T).GetFields().Where(x => toInclude.Contains(x.Name));
         
         foreach(PropertyInfo prop in props)
         {
             object? o = prop.GetValue(obj);
             string stringRep = JsonConvert.SerializeObject(o);
-            Console.WriteLine(stringRep);
             
             if(!reverseLookup.ContainsKey(stringRep) || !reverseLookup[stringRep].ContainsKey(typeof(T).Name))
             {
@@ -70,8 +66,6 @@ public class PolarbearDB
             
             for(int i = 0; i < reverseLookup[stringRep][typeof(T).Name].Count; i++)
             {
-                Console.WriteLine(reverseLookup[stringRep][typeof(T).Name][i]);
-                
                 ComparisonResult result = logic.Compare(obj, reverseLookup[stringRep][typeof(T).Name][i]);
                 if(result.AreEqual)
                 {
@@ -84,7 +78,6 @@ public class PolarbearDB
         {
             object? o = prop.GetValue(obj);
             string stringRep = JsonConvert.SerializeObject(o);
-            Console.WriteLine(stringRep);
             
             if(!reverseLookup.ContainsKey(stringRep) || !reverseLookup[stringRep].ContainsKey(typeof(T).Name))
             {
@@ -96,8 +89,6 @@ public class PolarbearDB
             
             for(int i = 0; i < reverseLookup[stringRep][typeof(T).Name].Count; i++)
             {
-                Console.WriteLine(reverseLookup[stringRep][typeof(T).Name][i]);
-                
                 ComparisonResult result = logic.Compare(obj, reverseLookup[stringRep][typeof(T).Name][i]);
                 if(result.AreEqual)
                 {
@@ -117,9 +108,7 @@ public class PolarbearDB
         foreach(PropertyInfo prop in props)
         {
             object? o = prop.GetValue(obj);
-
             string stringRep = JsonConvert.SerializeObject(o);
-            Console.WriteLine(stringRep);
 
             if(!reverseLookup.ContainsKey(stringRep))
             {
@@ -156,8 +145,55 @@ public class PolarbearDB
         
     }
 
-    public void Remove()
+    public void Remove<T>(T obj, params string[] toInclude) where T: Enterable
     {
+        IEnumerable<PropertyInfo> props = typeof(T).GetProperties().Where(x => toInclude.Contains(x.Name));
+        IEnumerable<FieldInfo> fields = typeof(T).GetFields().Where(x => toInclude.Contains(x.Name));
         
+        foreach(PropertyInfo prop in props)
+        {
+            object? o = prop.GetValue(obj);
+            string stringRep = JsonConvert.SerializeObject(o);
+            
+            if(!reverseLookup.ContainsKey(stringRep) || !reverseLookup[stringRep].ContainsKey(typeof(T).Name))
+            {
+                return;
+            }
+
+            CompareLogic logic = new();
+            logic.Config.MembersToInclude = toInclude.ToList();
+            
+            for(int i = 0; i < reverseLookup[stringRep][typeof(T).Name].Count; i++)
+            {
+                ComparisonResult result = logic.Compare(obj, reverseLookup[stringRep][typeof(T).Name][i]);
+                if(result.AreEqual)
+                {
+                    reverseLookup[stringRep][typeof(T).Name].RemoveAt(i);
+                }
+            }
+        }
+        
+        foreach(FieldInfo prop in fields)
+        {
+            object? o = prop.GetValue(obj);
+            string stringRep = JsonConvert.SerializeObject(o);
+            
+            if(!reverseLookup.ContainsKey(stringRep) || !reverseLookup[stringRep].ContainsKey(typeof(T).Name))
+            {
+                return;
+            }
+
+            CompareLogic logic = new();
+            logic.Config.MembersToInclude = toInclude.ToList();
+            
+            for(int i = 0; i < reverseLookup[stringRep][typeof(T).Name].Count; i++)
+            {
+                ComparisonResult result = logic.Compare(obj, reverseLookup[stringRep][typeof(T).Name][i]);
+                if(result.AreEqual)
+                {
+                    reverseLookup[stringRep][typeof(T).Name].RemoveAt(i);
+                }
+            }
+        }
     }
 }
