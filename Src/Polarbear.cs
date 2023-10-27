@@ -220,4 +220,16 @@ public class PolarbearDB
             }
         }
     }
+
+    public void Drop<T>(T obj) where T: Enterable
+    {
+        string key = typeof(T).Name;
+
+        if(dbMap.ContainsKey(key))
+        {
+            dbMap.Remove(key);
+        }
+        
+        // need to implement a removal method for the reverse lookup table
+    }
 }
