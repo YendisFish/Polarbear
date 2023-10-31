@@ -9,6 +9,12 @@ public class PolarbearDB
 {
     internal Dictionary<string, Dictionary<string, Enterable>> dbMap { get; set; } = new();
     internal Dictionary<string, Dictionary<string, List<Enterable>>> reverseLookup { get; set; } = new();
+    internal string saveLocation { get; set; }
+
+    public PolarbearDB(string save)
+    {
+        saveLocation = save;
+    }
     
     public void Insert<T>(T obj) where T: Enterable
     {
