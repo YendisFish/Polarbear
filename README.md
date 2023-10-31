@@ -32,7 +32,7 @@ class MyData : Enterable
     
     pubic MyData(int num)
     {
-        myCustonData = num;
+        myCustomData = num;
     }
 }
 ```
