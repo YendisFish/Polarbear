@@ -1,33 +1,40 @@
 ﻿using Newtonsoft.Json;
 using Polarbear;
+using System.Diagnostics;
 
-PolarbearDB db = new();
+PolarbearDB db = new("./save/");
+Stopwatch watch = new();
 
-Test t = new Test("Hi!");
-Test t1 = new Test("Hi!");
-t1.x = 100;
+Console.WriteLine("Loaded");
 
-db.Insert(t);
+db.Insert(new Test(Guid.NewGuid().ToString()));
 
-Test[]? tests = db.Query(t1, "Id");
-Console.WriteLine(tests.Length);
-Console.WriteLine(tests[0].Id);
+/*
+watch.Start();
+db.Snapshot();
+watch.Stop();*/
 
-db.Remove(tests[0], "Id", "x");
+//Console.WriteLine(watch.Elapsed.Seconds);
 
-Test[]? tests2 = db.Query(t1, "Id");
-Console.WriteLine(tests2.Length);
-
-Test? tt = db.QueryById(t);
-if(tt is null)
+for(int i = 0; i < 5000000; i++)
 {
-    Console.WriteLine("Success");
+    db.Insert(new Enterable());
+    
+    watch.Start();
+    //db.Snapshot();
+    watch.Stop();
+    
+    //Console.WriteLine(watch.Elapsed.Microseconds);
+    watch.Reset();
 }
-Console.WriteLine(tt.Id);
+
+Console.WriteLine("Finished Inserts");
+db.Snapshot();
 
 public class Test : Enterable
 {
     public int x = 5;
+    public byte[] y = new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
     
     public Test(string id)
     {

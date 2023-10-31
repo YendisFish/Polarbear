@@ -2,6 +2,7 @@
 using KellermanSoftware.CompareNetObjects;
 using Microsoft.VisualBasic;
 using Newtonsoft.Json;
+using Polarbear.Snapshotting;
 
 namespace Polarbear;
 
@@ -15,7 +16,16 @@ public class PolarbearDB
     {
         saveLocation = save;
     }
+
+    internal PolarbearDB(Dictionary<string, Dictionary<string, Enterable>> db, Dictionary<string, Dictionary<string, List<Enterable>>> rv, string sl)
+    {
+        this.dbMap = db;
+        this.reverseLookup = rv;
+        this.saveLocation = sl;
+    }
     
+    internal PolarbearDB() { }
+
     public void Insert<T>(T obj) where T: Enterable
     {
         if(!dbMap.ContainsKey(typeof(T).Name))
@@ -237,5 +247,15 @@ public class PolarbearDB
         }
         
         // need to implement a removal method for the reverse lookup table
+    }
+    
+    public void Snapshot()
+    {
+        Snapshotter.Snapshot(this);
+    }
+    
+    public static PolarbearDB Load(string path)
+    {
+        return Snapshotter.LoadFrom(path);
     }
 }
