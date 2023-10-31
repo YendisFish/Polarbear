@@ -3,6 +3,7 @@ using KellermanSoftware.CompareNetObjects;
 using Microsoft.VisualBasic;
 using Newtonsoft.Json;
 using Polarbear.Snapshotting;
+using DeepCopy;
 
 namespace Polarbear;
 
@@ -35,9 +36,9 @@ public class PolarbearDB
         
         if(!dbMap[typeof(T).Name].ContainsKey(obj.Id))
         {
-            dbMap[typeof(T).Name].Add(obj.Id, obj);
+            dbMap[typeof(T).Name].Add(obj.Id, DeepCopier.Copy(obj));
         } else {
-            dbMap[typeof(T).Name][obj.Id] = obj;
+            dbMap[typeof(T).Name][obj.Id] = DeepCopier.Copy(obj);
         }
         
         ReverseInsert(obj);
@@ -54,7 +55,7 @@ public class PolarbearDB
                 return null;
             }
 
-            return (T?)ret;
+            return DeepCopier.Copy((T?)ret);
         }
 
         return null;
@@ -85,7 +86,7 @@ public class PolarbearDB
                 ComparisonResult result = logic.Compare(obj, reverseLookup[stringRep][typeof(T).Name][i]);
                 if(result.AreEqual)
                 {
-                    ret.Add((T)reverseLookup[stringRep][typeof(T).Name][i]);
+                    ret.Add(DeepCopier.Copy((T)reverseLookup[stringRep][typeof(T).Name][i]));
                 }
             }
         }
@@ -108,7 +109,7 @@ public class PolarbearDB
                 ComparisonResult result = logic.Compare(obj, reverseLookup[stringRep][typeof(T).Name][i]);
                 if(result.AreEqual)
                 {
-                    ret.Add((T)reverseLookup[stringRep][typeof(T).Name][i]);
+                    ret.Add(DeepCopier.Copy((T)reverseLookup[stringRep][typeof(T).Name][i]));
                 }
             }
         }
@@ -134,7 +135,7 @@ public class PolarbearDB
             if(!reverseLookup[stringRep].ContainsKey(typeof(T).Name))
             {
                 reverseLookup[stringRep].Add(typeof(T).Name, new());
-                reverseLookup[stringRep][typeof(T).Name].Add(obj);
+                reverseLookup[stringRep][typeof(T).Name].Add(DeepCopier.Copy(obj));
                 return;
             }
 
@@ -143,7 +144,7 @@ public class PolarbearDB
             {
                 if(reverseLookup[stringRep][typeof(T).Name][i].Id == obj.Id)
                 {
-                    reverseLookup[stringRep][typeof(T).Name][i] = obj;
+                    reverseLookup[stringRep][typeof(T).Name][i] = DeepCopier.Copy(obj);
                     contains = true;
                     break;
                 }
@@ -151,7 +152,7 @@ public class PolarbearDB
 
             if(!contains)
             {
-                reverseLookup[stringRep][typeof(T).Name].Add(obj);
+                reverseLookup[stringRep][typeof(T).Name].Add(DeepCopier.Copy(obj));
             }
         }
     }

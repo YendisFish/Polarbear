@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="CompareNETObjects" Version="4.82.0" />
+    <PackageReference Include="DeepCopy" Version="1.0.3" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="Newtonsoft.Json.Bson" Version="1.0.2" />
   </ItemGroup>
