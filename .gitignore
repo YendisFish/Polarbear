@@ -5,6 +5,7 @@
 
 build/
 save/
+package/
 
 .idea/
 idea/
