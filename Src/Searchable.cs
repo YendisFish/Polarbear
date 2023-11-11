@@ -354,7 +354,7 @@ public class Searchable<T> where T: Enterable
         int start = db.dbMap[db.GetTable<T>()].Keys.ToList().IndexOf(safe.Id);
         for(int i = start; i < start + limit; i++)
         {
-            ret.Add((T)db.dbMap[db.GetTable<T>()].ElementAt(i).Value);
+            ret.Add(DeepCopier.Copy((T)db.dbMap[db.GetTable<T>()].ElementAt(i).Value));
         }
 
         return ret;
@@ -367,7 +367,7 @@ public class Searchable<T> where T: Enterable
         int start = db.dbMap[db.GetTable<T>()].Keys.ToList().IndexOf(safe.Id);
         for(int i = start; i > start - limit; i--)
         {
-            ret.Add((T)db.dbMap[db.GetTable<T>()].ElementAt(i).Value);
+            ret.Add(DeepCopier.Copy((T)db.dbMap[db.GetTable<T>()].ElementAt(i).Value));
         }
 
         return ret;

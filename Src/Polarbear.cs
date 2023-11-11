@@ -45,7 +45,7 @@ public class PolarbearDB
         
             ReverseInsert(obj);
             
-            Snapshotter.Snapshot(this);
+            //Snapshotter.Snapshot(this);
         }
     }
 
