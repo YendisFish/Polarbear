@@ -29,28 +29,31 @@ public class PolarbearDB
 
     public void Insert<T>(T obj) where T: Enterable
     {
-        if(!dbMap.ContainsKey(typeof(T).Name))
+        lock(dbMap)
         {
-            dbMap.Add(typeof(T).Name, new());
-        }
+            if(!dbMap.ContainsKey(typeof(T).Name))
+            {
+                dbMap.Add(typeof(T).Name, new());
+            }
         
-        if(!dbMap[typeof(T).Name].ContainsKey(obj.Id))
-        {
-            dbMap[typeof(T).Name].Add(obj.Id, DeepCopier.Copy(obj));
-        } else {
-            dbMap[typeof(T).Name][obj.Id] = DeepCopier.Copy(obj);
-        }
+            if(!dbMap[typeof(T).Name].ContainsKey(obj.Id))
+            {
+                dbMap[typeof(T).Name].Add(obj.Id, DeepCopier.Copy(obj));
+            } else {
+                dbMap[typeof(T).Name][obj.Id] = DeepCopier.Copy(obj);
+            }
         
-        ReverseInsert(obj);
+            ReverseInsert(obj);
+        }
     }
 
     public T? QueryById<T>(T obj) where T : Enterable
     {
-        Dictionary<string, Enterable>? entries = new();
-        if (dbMap.TryGetValue(typeof(T).Name, out entries))
+        Dictionary<string, Enterable> entries;
+        if (dbMap.TryGetValue(typeof(T).Name, out entries!))
         {
-            Enterable? ret = null;
-            if (!entries.TryGetValue(obj.Id, out ret))
+            Enterable ret;
+            if (!entries.TryGetValue(obj.Id, out ret!))
             {
                 return null;
             }
@@ -117,123 +120,169 @@ public class PolarbearDB
         return ret.ToArray();
     }
 
+    public T[]? QueryAll<T>(string tableName) where T: Enterable
+    {
+        List<T> ret = new();
+
+        Dictionary<string, Enterable>? table;
+        if(!dbMap.TryGetValue(tableName, out table))
+        {
+            return new T[1];
+        }
+
+        foreach(KeyValuePair<string, Enterable> entry in table)
+        {
+            ret.Add((T)entry.Value);
+        }
+
+        return ret.ToArray();
+    }
+
+    public string GetTable<T>() where T : Enterable => typeof(T).Name;
+
     public void ReverseInsert<T>(T obj) where T: Enterable
     {
-        PropertyInfo[] props = typeof(T).GetProperties();
-        FieldInfo[] fields = typeof(T).GetFields();
-        
-        foreach(PropertyInfo prop in props)
+        lock(reverseLookup)
         {
-            object? o = prop.GetValue(obj);
-            string stringRep = JsonConvert.SerializeObject(o);
-
-            if(!reverseLookup.ContainsKey(stringRep))
+            PropertyInfo[] props = typeof(T).GetProperties();
+            FieldInfo[] fields = typeof(T).GetFields();
+        
+            foreach(PropertyInfo prop in props)
             {
-                reverseLookup.Add(stringRep, new());
-            }
+                object? o = prop.GetValue(obj);
+                string stringRep = JsonConvert.SerializeObject(o);
 
-            if(!reverseLookup[stringRep].ContainsKey(typeof(T).Name))
-            {
-                reverseLookup[stringRep].Add(typeof(T).Name, new());
-                reverseLookup[stringRep][typeof(T).Name].Add(DeepCopier.Copy(obj));
-                return;
-            }
-
-            bool contains = false;
-            for(int i = 0; i < reverseLookup[stringRep][typeof(T).Name].Count; i++)
-            {
-                if(reverseLookup[stringRep][typeof(T).Name][i].Id == obj.Id)
+                if(!reverseLookup.ContainsKey(stringRep))
                 {
-                    reverseLookup[stringRep][typeof(T).Name][i] = DeepCopier.Copy(obj);
-                    contains = true;
-                    break;
+                    reverseLookup.Add(stringRep, new());
                 }
-            }
 
-            if(!contains)
-            {
-                reverseLookup[stringRep][typeof(T).Name].Add(DeepCopier.Copy(obj));
+                if(!reverseLookup[stringRep].ContainsKey(typeof(T).Name))
+                {
+                    reverseLookup[stringRep].Add(typeof(T).Name, new());
+                    reverseLookup[stringRep][typeof(T).Name].Add(DeepCopier.Copy(obj));
+                    return;
+                }
+
+                bool contains = false;
+                for(int i = 0; i < reverseLookup[stringRep][typeof(T).Name].Count; i++)
+                {
+                    if(reverseLookup[stringRep][typeof(T).Name][i].Id == obj.Id)
+                    {
+                        reverseLookup[stringRep][typeof(T).Name][i] = DeepCopier.Copy(obj);
+                        contains = true;
+                        break;
+                    }
+                }
+
+                if(!contains)
+                {
+                    reverseLookup[stringRep][typeof(T).Name].Add(DeepCopier.Copy(obj));
+                }
             }
         }
     }
 
-    public void RemoveById<T>(T obj) where T: Enterable
+    internal void RemoveById<T>(T obj) where T: Enterable
     {
-        string key = typeof(T).Name;
-
-        if(!dbMap.ContainsKey(key) || !dbMap[key].ContainsKey(obj.Id))
+        lock(dbMap)
         {
-            return;
-        }
+            string key = typeof(T).Name;
 
-        dbMap[key].Remove(obj.Id);
+            if(!dbMap.ContainsKey(key) || !dbMap[key].ContainsKey(obj.Id))
+            {
+                return;
+            }
+
+            dbMap[key].Remove(obj.Id);
+        }
     }
 
     public void Remove<T>(T obj, params string[] toInclude) where T: Enterable
     {
-        List<T> toRemove = new();
-        
-        IEnumerable<PropertyInfo> props = typeof(T).GetProperties().Where(x => toInclude.Contains(x.Name));
-        IEnumerable<FieldInfo> fields = typeof(T).GetFields().Where(x => toInclude.Contains(x.Name));
-        
-        foreach(PropertyInfo prop in props)
+        lock(reverseLookup)
         {
-            object? o = prop.GetValue(obj);
-            string stringRep = JsonConvert.SerializeObject(o);
+            List<T> toRemove = new();
+        
+            IEnumerable<PropertyInfo> props = typeof(T).GetProperties().Where(x => toInclude.Contains(x.Name));
+            IEnumerable<FieldInfo> fields = typeof(T).GetFields().Where(x => toInclude.Contains(x.Name));
             
-            if(!reverseLookup.ContainsKey(stringRep) || !reverseLookup[stringRep].ContainsKey(typeof(T).Name))
+            foreach(PropertyInfo prop in props)
             {
-                break;
+                object? o = prop.GetValue(obj);
+                string stringRep = JsonConvert.SerializeObject(o);
+                
+                if(!reverseLookup.ContainsKey(stringRep) || !reverseLookup[stringRep].ContainsKey(typeof(T).Name))
+                {
+                    break;
+                }
+
+                CompareLogic logic = new();
+                logic.Config.MembersToInclude = toInclude.ToList();
+                
+                for(int i = 0; i < reverseLookup[stringRep][typeof(T).Name].Count; i++)
+                {
+                    ComparisonResult result = logic.Compare(obj, reverseLookup[stringRep][typeof(T).Name][i]);
+                    if(result.AreEqual)
+                    {
+                        toRemove.Add((T)reverseLookup[stringRep][typeof(T).Name][i]);
+                        reverseLookup[stringRep][typeof(T).Name].RemoveAt(i);
+                    }
+                }
+            }
+            
+            foreach(FieldInfo prop in fields)
+            {
+                object? o = prop.GetValue(obj);
+                string stringRep = JsonConvert.SerializeObject(o);
+                
+                if(!reverseLookup.ContainsKey(stringRep) || !reverseLookup[stringRep].ContainsKey(typeof(T).Name))
+                {
+                    break;
+                }
+
+                CompareLogic logic = new();
+                logic.Config.MembersToInclude = toInclude.ToList();
+                
+                for(int i = 0; i < reverseLookup[stringRep][typeof(T).Name].Count; i++)
+                {
+                    ComparisonResult result = logic.Compare(obj, reverseLookup[stringRep][typeof(T).Name][i]);
+                    if(result.AreEqual)
+                    {
+                        toRemove.Add((T)reverseLookup[stringRep][typeof(T).Name][i]);
+                        reverseLookup[stringRep][typeof(T).Name].RemoveAt(i);
+                    }
+                }
+            }
+            
+            if(!dbMap.ContainsKey(typeof(T).Name))
+            {
+                throw new Exception("Data inconsistency!");
             }
 
-            CompareLogic logic = new();
-            logic.Config.MembersToInclude = toInclude.ToList();
-            
-            for(int i = 0; i < reverseLookup[stringRep][typeof(T).Name].Count; i++)
+            foreach(T removeable in toRemove)
             {
-                ComparisonResult result = logic.Compare(obj, reverseLookup[stringRep][typeof(T).Name][i]);
-                if(result.AreEqual)
+                if(dbMap[typeof(T).Name].ContainsKey(removeable.Id))
                 {
-                    toRemove.Add((T)reverseLookup[stringRep][typeof(T).Name][i]);
-                    reverseLookup[stringRep][typeof(T).Name].RemoveAt(i);
+                    RemoveById(removeable);
                 }
             }
         }
-        
-        foreach(FieldInfo prop in fields)
-        {
-            object? o = prop.GetValue(obj);
-            string stringRep = JsonConvert.SerializeObject(o);
-            
-            if(!reverseLookup.ContainsKey(stringRep) || !reverseLookup[stringRep].ContainsKey(typeof(T).Name))
-            {
-                break;
-            }
+    }
 
-            CompareLogic logic = new();
-            logic.Config.MembersToInclude = toInclude.ToList();
-            
-            for(int i = 0; i < reverseLookup[stringRep][typeof(T).Name].Count; i++)
+    internal void ReverseTableRemove<T>() where T: Enterable
+    {
+        lock(reverseLookup)
+        {
+            foreach(KeyValuePair<string, Dictionary<string, List<Enterable>>> rVal in reverseLookup)
             {
-                ComparisonResult result = logic.Compare(obj, reverseLookup[stringRep][typeof(T).Name][i]);
-                if(result.AreEqual)
+                foreach(KeyValuePair<string, List<Enterable>> entries in rVal.Value)
                 {
-                    toRemove.Add((T)reverseLookup[stringRep][typeof(T).Name][i]);
-                    reverseLookup[stringRep][typeof(T).Name].RemoveAt(i);
+                    if(entries.Key == typeof(T).Name)
+                    {
+                        rVal.Value.Remove(entries.Key);
+                    }
                 }
-            }
-        }
-        
-        if(!dbMap.ContainsKey(typeof(T).Name))
-        {
-            throw new Exception("Data inconsistency!");
-        }
-
-        foreach(T removeable in toRemove)
-        {
-            if(dbMap[typeof(T).Name].ContainsKey(removeable.Id))
-            {
-                RemoveById(removeable);
             }
         }
     }
@@ -247,7 +296,7 @@ public class PolarbearDB
             dbMap.Remove(key);
         }
         
-        // need to implement a removal method for the reverse lookup table
+        ReverseTableRemove<T>();
     }
     
     public void Snapshot()
@@ -258,5 +307,41 @@ public class PolarbearDB
     public static PolarbearDB Load(string path)
     {
         return Snapshotter.LoadFrom(path);
+    }
+}
+
+public class DatabaseTable<T> where T: Enterable
+{
+    internal Dictionary<string, Enterable> raw { get; set; }
+
+    public T this[int index]
+    {
+        get
+        {
+            return (T)raw.ElementAt(index).Value;
+        }
+
+        set
+        {
+            raw[raw.ElementAt(index).Key] = value;
+        }
+    }
+    
+    internal DatabaseTable(Dictionary<string, Enterable> raw)
+    {
+        this.raw = raw;
+    }
+    
+    public static DatabaseTable<T> GetTable<T>(PolarbearDB db) where T: Enterable
+    {
+#warning this gives an unsafe handle to the database table! please use with caution because you will be responsible for all thread safety!
+        
+        Dictionary<string, Enterable> ret;
+        if(!db.dbMap.TryGetValue(db.GetTable<T>(), out ret!))
+        {
+            throw new Exception("Table not found!");
+        }
+
+        return new(ret);
     }
 }

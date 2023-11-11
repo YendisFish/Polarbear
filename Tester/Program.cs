@@ -3,41 +3,36 @@ using Polarbear;
 using System.Diagnostics;
 
 PolarbearDB db = new("./save/");
-Stopwatch watch = new();
 
-Console.WriteLine("Loaded");
-
-db.Insert(new Test(Guid.NewGuid().ToString()));
-
-/*
-watch.Start();
-db.Snapshot();
-watch.Stop();*/
-
-//Console.WriteLine(watch.Elapsed.Seconds);
-
-for(int i = 0; i < 5000000; i++)
+for(int i = 0; i < 500; i++)
 {
-    db.Insert(new Enterable());
-    
-    watch.Start();
-    //db.Snapshot();
-    watch.Stop();
-    
-    //Console.WriteLine(watch.Elapsed.Microseconds);
-    watch.Reset();
+    Test t = new();
+    db.Insert(t);
 }
 
-Console.WriteLine("Finished Inserts");
-db.Snapshot();
+Test tt = new Test() { Id = "Tester" };
+Test t2 = new Test() { Id = "Tester2" };
+
+tt.x = 10;
+t2.x = 10;
+
+db.Insert(tt);
+db.Insert(t2);
+
+Searchable<Test> s = new(db);
+Searchable<Test> s2 = s.SelectFromLimited(t2, 5, SelectFromDirection.UP);
+
+foreach(Test t in s2)
+{
+    Console.WriteLine(t.Id);
+}
 
 public class Test : Enterable
 {
-    public int x = 5;
-    public byte[] y = new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
-    
-    public Test(string id)
+    public int x { get; set; } = 5;
+
+    public Test()
     {
-        Id = id;
+        Id = Guid.NewGuid().ToString();
     }
 }
