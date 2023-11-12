@@ -5,6 +5,22 @@ using Newtonsoft.Json;
 
 namespace Polarbear;
 
+/*
+ *
+ * Why did i not implement a "Join" function?
+ *
+ * The reasoning behind this lies within the fact that you can
+ * easily convert a Searchable<T> to an IEnumerable where all
+ * Join work can easily be done. After you have queried data
+ * from the database there is no reason to further have such
+ * objects as the Searchable<T> in use. For an IEnumeralbe will
+ * be much more efficient than anything that i could write.
+ * And so is LINQ! Searchable<T> is meant to be an object
+ * dealing with the database itself as something to iterate
+ * over. It is not meant to be something for LINQ query strings.
+ * 
+ */
+
 public class Searchable<T> where T: Enterable
 {
     internal PolarbearDB db { get; set; }
@@ -347,6 +363,8 @@ public class Searchable<T> where T: Enterable
         return ret;
     }
 
+    public IEnumerable<T> ToIEnumerable() => raw;
+
     internal List<T> DownwardsSearch(T safe, int limit)
     {
         List<T> ret = new();
@@ -354,7 +372,12 @@ public class Searchable<T> where T: Enterable
         int start = db.dbMap[db.GetTable<T>()].Keys.ToList().IndexOf(safe.Id);
         for(int i = start; i < start + limit; i++)
         {
-            ret.Add(DeepCopier.Copy((T)db.dbMap[db.GetTable<T>()].ElementAt(i).Value));
+            try
+            {
+                ret.Add(DeepCopier.Copy((T)db.dbMap[db.GetTable<T>()].ElementAt(i).Value));
+            } catch(IndexOutOfRangeException) {
+                break;
+            }
         }
 
         return ret;
@@ -367,7 +390,12 @@ public class Searchable<T> where T: Enterable
         int start = db.dbMap[db.GetTable<T>()].Keys.ToList().IndexOf(safe.Id);
         for(int i = start; i > start - limit; i--)
         {
-            ret.Add(DeepCopier.Copy((T)db.dbMap[db.GetTable<T>()].ElementAt(i).Value));
+            try
+            {
+                ret.Add(DeepCopier.Copy((T)db.dbMap[db.GetTable<T>()].ElementAt(i).Value));
+            } catch (IndexOutOfRangeException) {
+                break;
+            }
         }
 
         return ret;
