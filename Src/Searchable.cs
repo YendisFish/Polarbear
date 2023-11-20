@@ -13,7 +13,7 @@ namespace Polarbear;
  * easily convert a Searchable<T> to an IEnumerable where all
  * Join work can easily be done. After you have queried data
  * from the database there is no reason to further have such
- * objects as the Searchable<T> in use. For an IEnumeralbe will
+ * objects as the Searchable<T> in use. For an IEnumerable will
  * be much more efficient than anything that i could write.
  * And so is LINQ! Searchable<T> is meant to be an object
  * dealing with the database itself as something to iterate
@@ -362,8 +362,106 @@ public class Searchable<T> where T: Enterable
 
         return ret;
     }
+    
+    public Searchable<T> SelectFromWhere(Func<T, bool> cond, T obj, SelectFromDirection direction, int limit = -1)
+    {
+        T? safe = db.QueryById(obj);
+        Searchable<T> ret = new Searchable<T>(db);
+        
+        if(safe is null)
+        {
+            return this;
+        }
+
+        switch(direction)
+        {
+            case SelectFromDirection.DOWN:
+            {
+                ret.raw = DownwardsSearch(safe, limit);
+                break;
+            }
+
+            case SelectFromDirection.UP:
+            {
+                ret.raw = UpwardsSearch(safe, limit);
+                break;
+            }    
+        }
+
+        return ret;
+    }
 
     public IEnumerable<T> ToIEnumerable() => raw;
+    
+    internal List<T> DownwardsSearch(T safe, Func<T, bool> cond, int limit)
+    {
+        List<T> ret = new();
+        
+        int start = db.dbMap[db.GetTable<T>()].Keys.ToList().IndexOf(safe.Id);
+
+        if(limit is not -1)
+        {
+            for(int i = start; i < start + limit; i++)
+            {
+                try
+                {
+                    if(cond((T)db.dbMap[db.GetTable<T>()].ElementAt(i).Value))
+                    {
+                        ret.Add(DeepCopier.Copy((T)db.dbMap[db.GetTable<T>()].ElementAt(i).Value));
+                    }
+                } catch(IndexOutOfRangeException) {
+                    break;
+                }
+            }   
+        } else {
+            for(int i = start; i < db.dbMap[db.GetTable<T>()].Count; i++)
+            {
+                try
+                {
+                    if(cond((T)db.dbMap[db.GetTable<T>()].ElementAt(i).Value))
+                    {
+                        ret.Add(DeepCopier.Copy((T)db.dbMap[db.GetTable<T>()].ElementAt(i).Value));
+                    }
+                } catch(IndexOutOfRangeException) {
+                    break;
+                }
+            }
+        }
+
+        return ret;
+    }
+    
+    internal List<T> UpwardsSearch(T safe, Func<T, bool> cond, int limit)
+    {
+        List<T> ret = new();
+        
+        int start = db.dbMap[db.GetTable<T>()].Keys.ToList().IndexOf(safe.Id);
+
+        if(limit is not -1)
+        {
+            for(int i = start; i > start - limit; i--)
+            {
+                try
+                {
+                    ret.Add(DeepCopier.Copy((T)db.dbMap[db.GetTable<T>()].ElementAt(i).Value));
+                } catch (IndexOutOfRangeException) {
+                    break;
+                }
+            }
+        } else {
+            for(int i = start; i > 0; i--)
+            {
+                try
+                {
+                    ret.Add(DeepCopier.Copy((T)db.dbMap[db.GetTable<T>()].ElementAt(i).Value));
+                } catch (IndexOutOfRangeException) {
+                    break;
+                }
+            }
+        }
+
+        return ret;
+    }
 
     internal List<T> DownwardsSearch(T safe, int limit)
     {
