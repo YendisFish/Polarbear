@@ -2,46 +2,35 @@
 using Polarbear;
 using System.Diagnostics;
 
-PolarbearDB db = new("./save/");
-Stopwatch watch = new();
+PolarbearDB db = new("../../a/");
 
-for(int i = 0; i < 100000; i++)
+for(int i = 0; i < 5000; i++)
 {
-    Test t = new();
-    db.Insert(t);
-    
-    Console.WriteLine("Amount left: " + (100000 - i));
+    db.InsertSorted(new ToSort());
 }
 
-Console.WriteLine("Searching");
+DatabaseTable<ToSort> sorted = DatabaseTable<ToSort>.GetTable<ToSort>(db);
 
-Test tt = new Test() { Id = "Tester" };
-Test t2 = new Test() { Id = "Tester2" };
-
-tt.x = 10;
-t2.x = 10;
-
-db.Insert(tt);
-db.Insert(t2);
-
-Searchable<Test> s = new(db);
-watch.Start();
-Searchable<Test> s2 = s.SelectFromLimited(t2, 5, SelectFromDirection.UP);
-watch.Stop();
-
-Console.WriteLine("Query Time: " + watch.Elapsed.TotalMilliseconds);
-
-foreach(Test t in s2)
+for(int i = 0; i < sorted.Count; i++)
 {
-    Console.WriteLine(t.Id);
+    Console.WriteLine(sorted[i].Id);
 }
 
-public class Test : Enterable
+public class Comparer : IComparer<string>
 {
-    public int x { get; set; } = 5;
-
-    public Test()
+    public int Compare(string x, string y)
     {
-        Id = Guid.NewGuid().ToString();
+        return DateTime.Compare(DateTime.Parse(x), DateTime.Parse(y));
+    }
+}
+
+class ToSort : Sortable
+{
+    public override IComparer<string> Comparer { get; init; }
+
+    public ToSort()
+    {
+        Id = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.ffff");
+        this.Comparer = new Comparer();
     }
 }

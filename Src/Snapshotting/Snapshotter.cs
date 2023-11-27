@@ -89,7 +89,7 @@ public static class Snapshotter
         using(FileStream fs = dbFile.OpenRead()) using(BsonDataReader rdr = new(fs))
         {
             JsonSerializer serializer = new() { TypeNameHandling = TypeNameHandling.All };
-            db.dbMap = serializer.Deserialize<Dictionary<string, Dictionary<string, Enterable>>>(rdr) ?? /* vv Next Line vv*/
+            db.dbMap = serializer.Deserialize<Dictionary<string, IDictionary<string, Enterable>>>(rdr) ?? /* vv Next Line vv*/
                        throw new Exception("Could not load DB from file!");
         }
         

@@ -18,7 +18,7 @@ public struct Foreign<T> where T: Enterable
 
     public T? ToEnterable(PolarbearDB db)
     {
-        Dictionary<string, Enterable> entries;
+        IDictionary<string, Enterable> entries;
         if (db.dbMap.TryGetValue(typeof(T).Name, out entries!))
         {
             Enterable ret;
