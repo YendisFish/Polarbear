@@ -9,7 +9,7 @@ for(int i = 0; i < 5000; i++)
     db.InsertSorted(new ToSort());
 }
 
-DatabaseTable<ToSort> sorted = DatabaseTable<ToSort>.GetTable<ToSort>(db);
+DatabaseTable<ToSort> sorted = DatabaseTable<ToSort>.GetTable(db);
 
 for(int i = 0; i < sorted.Count; i++)
 {

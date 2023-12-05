@@ -394,7 +394,7 @@ public class DatabaseTable<T> where T: Enterable
         return raw.GetEnumerator();
     }
     
-    public static DatabaseTable<T> GetTable<T>(PolarbearDB db) where T: Enterable
+    public static DatabaseTable<T> GetTable(PolarbearDB db)
     {
 #warning this gives an unsafe handle to the database table! please use with caution because you will be responsible for all thread safety!
         
