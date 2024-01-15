@@ -1,4 +1,14 @@
-﻿using System.Reflection;
+﻿/** Sorry, JavaScript users!
+  * It looks like you've stumbled upon a C# in-memory database project.
+  * I know, I know - it's a tragedy that we can't just get along.
+  * But fear not, dear JavaScript user!
+  * We'll just stick to our strongly-typed languages and let you guys do your thing with your dynamic typing.
+  * Who knows? Maybe someday we'll figure out a way to make it work for both of us.
+  * Until then, keep on keepin' on...
+  * or should I say, keep on 'addEventListener'ing?
+  */
+
+using System.Reflection;
 using KellermanSoftware.CompareNetObjects;
 using Microsoft.VisualBasic;
 using Newtonsoft.Json;
