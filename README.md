@@ -30,7 +30,7 @@ class MyData : Enterable
 {
     int myCustomData { get; set; }
     
-    pubic MyData(int num)
+    public MyData(int num)
     {
         myCustomData = num;
     }
